@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+#
+# If EMAIL or PASS are not set then use random strings.
+#
+
+set -o errexit
+set -o pipefail
+#set -o nounset
+
+[ -z "$DEBUG" ] || set -x
+
+rand_str() {
+  dd if=/dev/urandom bs=256 count=1 2> /dev/null | \
+    LC_ALL=C tr -dc 'a-zA-Z0-9' | \
+      head -c 10
+}
+
+BASE_URL="${BASE_URL-http://localhost}"
+CURL='curl -sSf -H content-type:application/json'
+EMAIL="${EMAIL-$(printf '%s@example.com' $(rand_str))}"
+PASS=${PASS-$(rand_str)}
+DATA=$(printf '{"email":"%s", "password":"%s"}' "$EMAIL" "$PASS")
+
+# register
+$CURL -d "$DATA" "$BASE_URL/users"
+
+# get auth token
+$CURL -d "$DATA" "$BASE_URL/tokens" | jq -r .token
